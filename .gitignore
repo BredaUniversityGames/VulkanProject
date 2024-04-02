@@ -33,3 +33,4 @@
 x64
 VulkanProject.vcxproj.user
 .vs
+*.spv

@@ -3,9 +3,3 @@
 typedef unsigned int uint;
 
 
-
-namespace VulkanProject
-{
-
-}
-

@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <fstream>
 
+
+
 static std::vector<char> readFile(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -25,6 +27,22 @@ static std::vector<char> readFile(const std::string& filename)
 
 VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(Renderer::GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
 
 	auto vertShaderCode = readFile(desc.vertexShaderPath);
 	auto fragShaderCode = readFile(desc.fragmentShaderPath);
@@ -49,22 +67,8 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    VkVertexInputBindingDescription bindingDescription{};
-    bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, color);
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -88,7 +92,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -123,10 +127,10 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
 
-    if (vkCreatePipelineLayout(Renderer::GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(Renderer::GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to create pipeline layout!");
     }
@@ -147,25 +151,42 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(Renderer::GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(Renderer::GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) 
+    {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     vkDestroyShaderModule(Renderer::GetDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(Renderer::GetDevice(), vertShaderModule, nullptr);
 
-    
+   // Buffers
+    m_Uniformbuffer = new UniformBuffer(m_DescriptorSetLayout);
+
+    // Samplers
+    CreateTextureSamplers();
+}
+
+void VulkanProject::GraphicsPipeline::UpdateBuffers(UniformBufferObject& ubo)
+{
+    Renderer::UploadUniformBuffer(m_Uniformbuffer->m_UniformBuffersMapped, ubo, sizeof(ubo));
+    Renderer::BindDescriptors(m_Uniformbuffer->m_DescriptorSets);
 }
 
 VulkanProject::GraphicsPipeline::~GraphicsPipeline()
 {
+    m_Uniformbuffer->~UniformBuffer();
+    m_Uniformbuffer = nullptr;
+
 	vkDestroyPipeline(Renderer::GetDevice(), m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(Renderer::GetDevice(), m_PipelineLayout, nullptr);
+
+    vkDestroySampler(Renderer::GetDevice(), m_TextureSampler, nullptr);
+    vkDestroyDescriptorSetLayout(Renderer::GetDevice(), m_DescriptorSetLayout, nullptr);
 }
 
 void VulkanProject::GraphicsPipeline::Bind()
 {
-	Renderer::BindPipeline(m_GraphicsPipeline);
+	Renderer::BindPipeline(m_GraphicsPipeline, m_PipelineLayout);
 }
 
 VkShaderModule VulkanProject::GraphicsPipeline::createShaderModule(const std::vector<char>& code)
@@ -182,6 +203,32 @@ VkShaderModule VulkanProject::GraphicsPipeline::createShaderModule(const std::ve
 	}
 
 	return shaderModule;
+}
+
+void VulkanProject::GraphicsPipeline::CreateTextureSamplers()
+{
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(Renderer::GetPhysicalDevice(), &properties);
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+    if (vkCreateSampler(Renderer::GetDevice(), &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
 }
 
 VulkanProject::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint16_t> indices)
@@ -233,9 +280,10 @@ VulkanProject::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint16_t> in
     }
 }
 
-
 void VulkanProject::Mesh::Draw()
 {
+    
+
     VkBuffer vertexBuffers[] = { m_VertexBuffer };
     Renderer::UploadIndexedBuffer(vertexBuffers, m_IndexBuffer, sizeOfIndices);
 }
@@ -248,3 +296,80 @@ VulkanProject::Mesh::~Mesh()
     vkDestroyBuffer(Renderer::GetDevice(), m_VertexBuffer, nullptr);
     vkFreeMemory(Renderer::GetDevice(), m_VertexBufferMemory, nullptr);
 }
+
+VulkanProject::UniformBuffer::UniformBuffer(VkDescriptorSetLayout& layout)
+{
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    m_UniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    m_UniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
+
+        vkMapMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
+    }
+
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    if (vkCreateDescriptorPool(Renderer::GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+
+    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, layout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = m_DescriptorPool;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    allocInfo.pSetLayouts = layouts.data();
+
+    m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    if (vkAllocateDescriptorSets(Renderer::GetDevice(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = m_UniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSets[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+
+        vkUpdateDescriptorSets(Renderer::GetDevice(), 1, &descriptorWrite, 0, nullptr);
+    }
+}
+
+
+VulkanProject::UniformBuffer::~UniformBuffer()
+{
+    vkDestroyDescriptorPool(Renderer::GetDevice(), m_DescriptorPool, nullptr);
+
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroyBuffer(Renderer::GetDevice(), m_UniformBuffers[i], nullptr);
+        vkFreeMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], nullptr);
+    }
+}
+

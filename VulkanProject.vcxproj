@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\ExternalFiles\stdImage;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -94,7 +94,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\ExternalFiles\stdImage;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\ExternalFiles\stdImage;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -130,7 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\ExternalFiles\Vulkan\Include;$(ProjectDir)\ExternalFiles\glm;$(ProjectDir)\ExternalFiles\GLFW\include;$(ProjectDir)\ExternalFiles\stdImage;$(ProjectDir)\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -148,6 +148,7 @@
     <ClCompile Include="Source\Core\main.cpp" />
     <ClCompile Include="Source\Core\Rendering\Shader.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
+    <ClCompile Include="Source\Core\Rendering\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Includes.h" />
@@ -157,6 +158,7 @@
     <ClInclude Include="Source\Core\Rendering\HelperFunctions.h" />
     <ClInclude Include="Source\Core\Rendering\Shader.h" />
     <ClInclude Include="Source\Core\Window.h" />
+    <ClInclude Include="Source\Core\Rendering\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\frag.spv" />

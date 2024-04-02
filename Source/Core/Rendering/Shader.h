@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "Core/Includes.h"
+#include "Core/Defines.h"
 #include <array>
 
 namespace VulkanProject
@@ -50,22 +51,45 @@ namespace VulkanProject
 		//std::vector<Vertex> vertex;
 		
     };
+
+    
+    struct UniformBuffer
+    {
+
+        UniformBuffer(VkDescriptorSetLayout& layout);
+        ~UniformBuffer();
+     
+        std::vector<VkBuffer> m_UniformBuffers;
+        std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+        std::vector<void*> m_UniformBuffersMapped;
+
+        VkDescriptorPool m_DescriptorPool;
+        std::vector<VkDescriptorSet> m_DescriptorSets;
+    };
+
+    struct UniformBufferObject;
     class GraphicsPipeline
     {
     public:
         GraphicsPipeline(PipelineDesc& desc);
         ~GraphicsPipeline();
         void Bind();
-
+        void UpdateBuffers(UniformBufferObject& ubo);
     private:
         VkShaderModule createShaderModule(const std::vector<char>& code);
+        void CreateTextureSamplers();
 
+        VkDescriptorSetLayout m_DescriptorSetLayout;
         VkPipelineLayout m_PipelineLayout;
         VkPipeline m_GraphicsPipeline;
-
         
        // VkRenderPass m_RenderPass;
+        UniformBuffer* m_Uniformbuffer;
+
+        VkSampler m_TextureSampler;
+
     };
+
 
     class Mesh
     {
