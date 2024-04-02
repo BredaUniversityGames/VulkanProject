@@ -19,6 +19,11 @@ namespace VulkanProject
 		void BindPipeline(const VkPipeline& pipeline);
 		const VkRenderPass GetRenderPass();
 		const VkDevice GetDevice();
+		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void BindBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer);
+		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		
 	}
 	class Graphics
 	{
@@ -29,6 +34,8 @@ namespace VulkanProject
 		~Graphics();
 		void DrawFrame();
 		void Resize();
+		void BeginFrame();
+		void EndFrame();
 	private:
 	
 		void CreateSwapChain();
@@ -39,7 +46,7 @@ namespace VulkanProject
 	
 		// variables
 		const int MAX_FRAMES_IN_FLIGHT = 2;
-		uint32_t m_CurrentFrame = 0;
+		//uint32_t m_CurrentFrame = 0;
 
 		Window* m_WindowInstance = nullptr;
 		
@@ -47,9 +54,9 @@ namespace VulkanProject
 		VkInstance m_Instance = nullptr;
 		VkDebugUtilsMessengerEXT m_DebugMessenger = nullptr;
 
-		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+		//VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 
-		VkQueue m_GraphicsQueue = nullptr;
+		//VkQueue m_GraphicsQueue = nullptr;
 		VkQueue m_PresentQueue = nullptr;
 		VkSurfaceKHR m_Surface = nullptr;
 
@@ -60,14 +67,16 @@ namespace VulkanProject
 		std::vector<VkImageView> m_SwapChainImageViews;
 		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
-		VkCommandPool m_CommandPool;
-		std::vector<VkCommandBuffer> m_CommandBuffers;
+		//VkCommandPool m_CommandPool;
+		//std::vector<VkCommandBuffer> m_CommandBuffers;
 
 		// sync objects
 		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 		std::vector<VkFence> m_InFlightFences;
 		
+		uint32_t m_ImageIndex;
+		VkResult m_Result;
 	};
 }
 

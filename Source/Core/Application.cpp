@@ -2,39 +2,7 @@
 #include "Rendering/Graphics.h"
 #include "Window.h"
 #include "Rendering/Shader.h"
-#include <array>
-struct Vertex 
-{
-	glm::vec2 pos{};
-	glm::vec3 color{};
 
-	VkVertexInputBindingDescription getBindingDescription() 
-	{
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescription;
-	}
-
-	std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() 
-	{
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-		return attributeDescriptions;
-	}
-};
 VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 {
 	// Creating window
@@ -51,21 +19,24 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 	desc.vertexShaderPath = "Resources/Shaders/vert.spv"; 
 	desc.fragmentShaderPath = "Resources/Shaders/frag.spv"; 
 
-	GraphicsPipeline pipeline(desc);
-	pipeline.Bind();
-
 	const std::vector<Vertex> vertices = 
 	{
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
 		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 	};
 
+	Mesh mesh{ vertices };
+	GraphicsPipeline pipeline(desc);
+	pipeline.Bind();
+
+
 	// Main loop
 	while (m_Window->Update())
 	{
-		
-		m_Graphics->DrawFrame();
+		m_Graphics->BeginFrame();
+		mesh.Draw();
+		m_Graphics->EndFrame();
 		
 	}
 	ShutDown();
