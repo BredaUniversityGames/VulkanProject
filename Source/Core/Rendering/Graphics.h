@@ -19,10 +19,12 @@ namespace VulkanProject
 		void BindPipeline(const VkPipeline& pipeline);
 		const VkRenderPass GetRenderPass();
 		const VkDevice GetDevice();
-		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-		void BindBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer);
-		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+		void UploadBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer);
+		void UploadIndexedBuffer(const VkBuffer* buffer, VkBuffer indexBuffer, uint32_t sizeOfIndices);
+
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 		
 	}
 	class Graphics

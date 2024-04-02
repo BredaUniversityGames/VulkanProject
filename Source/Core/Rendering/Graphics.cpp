@@ -694,7 +694,7 @@ const VkDevice VulkanProject::Renderer::GetDevice()
 	return data->m_Device;
 }
 
-uint32_t VulkanProject::Renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(data->m_PhysicalDevice, &memProperties);
@@ -711,15 +711,23 @@ uint32_t VulkanProject::Renderer::findMemoryType(uint32_t typeFilter, VkMemoryPr
 	
 }
 
-void VulkanProject::Renderer::BindBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer)
+void VulkanProject::Renderer::UploadBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer)
 {
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, offsets);
 
 	vkCmdDraw(data->m_CommandBuffers[data->m_CurrentFrame], static_cast<uint32_t>(sizeOfBuffer), 1, 0, 0);
 }
+void VulkanProject::Renderer::UploadIndexedBuffer(const VkBuffer* buffer, VkBuffer indexBuffer, uint32_t sizeOfIndices)
+{
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, offsets);
+	vkCmdBindIndexBuffer(data->m_CommandBuffers[data->m_CurrentFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-void VulkanProject::Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	vkCmdDrawIndexed(data->m_CommandBuffers[data->m_CurrentFrame], static_cast<uint32_t>(sizeOfIndices), 1, 0, 0, 0);
+}
+
+void VulkanProject::Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
 	
 	VkBufferCreateInfo bufferInfo{};
@@ -739,7 +747,7 @@ void VulkanProject::Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(data->m_Device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 	{
@@ -750,7 +758,7 @@ void VulkanProject::Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags
 	
 }
 
-void VulkanProject::Renderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void VulkanProject::Renderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

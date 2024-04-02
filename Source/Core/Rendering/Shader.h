@@ -56,27 +56,31 @@ namespace VulkanProject
         GraphicsPipeline(PipelineDesc& desc);
         ~GraphicsPipeline();
         void Bind();
-        void Draw();
+
     private:
         VkShaderModule createShaderModule(const std::vector<char>& code);
 
         VkPipelineLayout m_PipelineLayout;
         VkPipeline m_GraphicsPipeline;
 
-        VkBuffer m_VertexBuffer;
-        VkDeviceMemory m_VertexBufferMemory;
-        size_t sizeOfVertices;
+        
        // VkRenderPass m_RenderPass;
     };
 
     class Mesh
     {
     public:
-        Mesh(std::vector<Vertex> vertices);
+        Mesh(std::vector<Vertex> vertices, std::vector<uint16_t> indices);
+        ~Mesh();
         void Draw();
     private:
         VkBuffer m_VertexBuffer;
         VkDeviceMemory m_VertexBufferMemory;
-        size_t sizeOfVertices;
+
+        VkBuffer m_IndexBuffer;
+        VkDeviceMemory m_IndexBufferMemory;
+
+        //size_t sizeOfVertices;
+        size_t sizeOfIndices;
     };
 }
