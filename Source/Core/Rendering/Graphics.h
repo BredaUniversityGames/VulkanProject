@@ -34,7 +34,7 @@ namespace VulkanProject
 		void Init(uint& width, uint& height, std::string& name);
 		void Shutdown();
 		~Graphics();
-		void DrawFrame();
+		
 		void Resize();
 		void BeginFrame();
 		void EndFrame();
@@ -44,7 +44,7 @@ namespace VulkanProject
 		void ClearSwapChain();
 		void CreateImageViews();
 		void CreateFrameBuffers();
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		
 	
 		// variables
 		const int MAX_FRAMES_IN_FLIGHT = 2;

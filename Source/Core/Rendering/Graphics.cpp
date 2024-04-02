@@ -22,6 +22,7 @@ struct RenderData
 	VkCommandPool m_CommandPool;
 	VkQueue m_GraphicsQueue = nullptr;
 
+	std::vector<VkDeviceSize> m_Offset;
 };
 static RenderData* data;
 
@@ -426,76 +427,6 @@ VulkanProject::Graphics::~Graphics()
 	m_WindowInstance = nullptr;
 }
 
-void VulkanProject::Graphics::DrawFrame()
-{
-	vkWaitForFences(data->m_Device, 1, &m_InFlightFences[data->m_CurrentFrame], VK_TRUE, UINT64_MAX);
-
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(data->m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[data->m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		Resize();
-		return;
-	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
-	{
-		throw std::runtime_error("failed to acquire swap chain image!");
-	}
-
-	vkResetFences(data->m_Device, 1, &m_InFlightFences[data->m_CurrentFrame]);
-
-	vkResetCommandBuffer(data->m_CommandBuffers[data->m_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-	recordCommandBuffer(data->m_CommandBuffers[data->m_CurrentFrame], imageIndex);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[data->m_CurrentFrame] };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &data->m_CommandBuffers[data->m_CurrentFrame];
-
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[data->m_CurrentFrame] };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	if (vkQueueSubmit(data->m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[data->m_CurrentFrame]) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
-
-	VkSwapchainKHR swapChains[] = { m_SwapChain };
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
-
-	presentInfo.pImageIndices = &imageIndex;
-
-	result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_WindowInstance->m_Resized)
-	{
-		m_WindowInstance->m_Resized = false;
-		Resize();
-	}
-	else if (result != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to present swap chain image!");
-	}
-
-	data->m_CurrentFrame = (data->m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-}
-
 void VulkanProject::Graphics::Resize()
 {
 	vkDeviceWaitIdle(data->m_Device);
@@ -623,57 +554,6 @@ void VulkanProject::Graphics::EndFrame()
 	data->m_CurrentFrame = (data->m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-
-void VulkanProject::Graphics::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to begin recording command buffer!");
-	}
-
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = data->m_RenderPass;
-	renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = m_SwapChainExtent;
-
-	
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &data->m_ClearColor;
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data->m_BoundPipeline);
-
-	
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = (float)m_SwapChainExtent.width;
-	viewport.height = (float)m_SwapChainExtent.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = m_SwapChainExtent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-	vkCmdEndRenderPass(commandBuffer);
-
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to record command buffer!");
-	}
-}
-
 void VulkanProject::Renderer::SetClearColor(glm::vec4& color)
 {
 	data->m_ClearColor = { color.r, color.g, color.b, color.a };
@@ -713,15 +593,19 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 
 void VulkanProject::Renderer::UploadBuffer(const VkBuffer* buffer, uint32_t sizeOfBuffer)
 {
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, offsets);
+	VkDeviceSize offsets = { 0 };
+	data->m_Offset.push_back(offsets);
+
+	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, data->m_Offset.data());
 
 	vkCmdDraw(data->m_CommandBuffers[data->m_CurrentFrame], static_cast<uint32_t>(sizeOfBuffer), 1, 0, 0);
 }
 void VulkanProject::Renderer::UploadIndexedBuffer(const VkBuffer* buffer, VkBuffer indexBuffer, uint32_t sizeOfIndices)
 {
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, offsets);
+	VkDeviceSize offsets = { 0 };
+	data->m_Offset.push_back(offsets);
+
+	vkCmdBindVertexBuffers(data->m_CommandBuffers[data->m_CurrentFrame], 0, 1, buffer, data->m_Offset.data());
 	vkCmdBindIndexBuffer(data->m_CommandBuffers[data->m_CurrentFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 	vkCmdDrawIndexed(data->m_CommandBuffers[data->m_CurrentFrame], static_cast<uint32_t>(sizeOfIndices), 1, 0, 0, 0);

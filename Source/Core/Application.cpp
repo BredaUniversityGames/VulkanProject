@@ -24,14 +24,25 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
 		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+		
 	};
 
+	const std::vector<Vertex> vertices1 =
+	{
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}},
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}
+	};
 	const std::vector<uint16_t> indices = 
 	{
-		0, 1, 2, 2, 3, 0
+		0, 1, 2
+	};
+	const std::vector<uint16_t> indices1 =
+	{
+		0, 1, 2
 	};
 	Mesh mesh{ vertices, indices };
+	Mesh mesh1{ vertices1, indices1 };
 	GraphicsPipeline pipeline(desc);
 	pipeline.Bind();
 
@@ -41,6 +52,7 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 	{
 		m_Graphics->BeginFrame();
 		mesh.Draw();
+		mesh1.Draw();
 		m_Graphics->EndFrame();
 		
 	}
