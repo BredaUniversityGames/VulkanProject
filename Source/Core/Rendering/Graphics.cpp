@@ -62,16 +62,17 @@ void VulkanProject::Graphics::Init(uint& width, uint& height, std::string& name)
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-		if (enableValidationLayers) {
+		if (enableValidationLayers) 
+		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(g_validationLayers.size());
 			createInfo.ppEnabledLayerNames = g_validationLayers.data();
 
 			populateDebugMessengerCreateInfo(debugCreateInfo);
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
-		else {
+		else
+		{
 			createInfo.enabledLayerCount = 0;
-
 			createInfo.pNext = nullptr;
 		}
 
@@ -82,15 +83,16 @@ void VulkanProject::Graphics::Init(uint& width, uint& height, std::string& name)
 
 	// Set up validation layer
 	{
-		if (!enableValidationLayers) return;
+		if (enableValidationLayers) 
+		{
+			VkDebugUtilsMessengerCreateInfoEXT createInfo;
+			populateDebugMessengerCreateInfo(createInfo);
 
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		populateDebugMessengerCreateInfo(createInfo);
-
-		if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("failed to set up debug messenger!");
+			if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) 
+			{
+				throw std::runtime_error("failed to set up debug messenger!");
+			}
 		}
-
 	}
 
 	// Create surface
@@ -159,11 +161,13 @@ void VulkanProject::Graphics::Init(uint& width, uint& height, std::string& name)
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(g_deviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = g_deviceExtensions.data();
 
-		if (enableValidationLayers) {
+		if (enableValidationLayers) 
+		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(g_validationLayers.size());
 			createInfo.ppEnabledLayerNames = g_validationLayers.data();
 		}
-		else {
+		else
+		{
 			createInfo.enabledLayerCount = 0;
 		}
 
