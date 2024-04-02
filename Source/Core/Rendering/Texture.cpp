@@ -13,7 +13,7 @@ void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t 
 VulkanProject::Texture::Texture(std::string filepath)
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     if (!pixels) 

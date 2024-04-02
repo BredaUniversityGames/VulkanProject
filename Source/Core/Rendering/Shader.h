@@ -15,6 +15,7 @@ namespace VulkanProject
     {
         glm::vec2 pos;
         glm::vec3 color;
+        glm::vec2 texCoord;
 
         static VkVertexInputBindingDescription getBindingDescription()
         {
@@ -26,9 +27,9 @@ namespace VulkanProject
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() 
         {
-            std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+            std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
@@ -39,6 +40,11 @@ namespace VulkanProject
             attributeDescriptions[1].location = 1;
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+            attributeDescriptions[2].binding = 0;
+            attributeDescriptions[2].location = 2;
+            attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
             return attributeDescriptions;
         }
@@ -52,26 +58,12 @@ namespace VulkanProject
 		
     };
 
-    
-    struct UniformBuffer
-    {
-
-        UniformBuffer(VkDescriptorSetLayout& layout);
-        ~UniformBuffer();
-     
-        std::vector<VkBuffer> m_UniformBuffers;
-        std::vector<VkDeviceMemory> m_UniformBuffersMemory;
-        std::vector<void*> m_UniformBuffersMapped;
-
-        VkDescriptorPool m_DescriptorPool;
-        std::vector<VkDescriptorSet> m_DescriptorSets;
-    };
-
     struct UniformBufferObject;
+    class Texture;
     class GraphicsPipeline
     {
     public:
-        GraphicsPipeline(PipelineDesc& desc);
+        GraphicsPipeline(PipelineDesc& desc, Texture& texture);
         ~GraphicsPipeline();
         void Bind();
         void UpdateBuffers(UniformBufferObject& ubo);
@@ -83,9 +75,14 @@ namespace VulkanProject
         VkPipelineLayout m_PipelineLayout;
         VkPipeline m_GraphicsPipeline;
         
-       // VkRenderPass m_RenderPass;
-        UniformBuffer* m_Uniformbuffer;
+        std::vector<VkBuffer> m_UniformBuffers;
+        std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+        std::vector<void*> m_UniformBuffersMapped;
 
+        VkDescriptorPool m_DescriptorPool;
+        std::vector<VkDescriptorSet> m_DescriptorSets;
+       // VkRenderPass m_RenderPass;
+       
         VkSampler m_TextureSampler;
 
     };

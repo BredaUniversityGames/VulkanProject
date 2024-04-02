@@ -9,6 +9,7 @@ namespace VulkanProject
 	public: 
 		Texture(std::string filepath);
 		~Texture();
+		const VkImageView GetImageview() const {  return m_TextureImageView; }
 	private:
 		
 		VkImage m_TextureImage;

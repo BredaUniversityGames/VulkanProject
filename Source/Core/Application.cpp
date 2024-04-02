@@ -2,7 +2,7 @@
 #include "Rendering/Graphics.h"
 #include "Window.h"
 #include "Rendering/Shader.h"
-
+#include "Rendering/Texture.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 VulkanProject::Application::Application(VulkanProject::AppConfig& info)
@@ -21,13 +21,12 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 	desc.vertexShaderPath = "Resources/Shaders/vert.spv"; 
 	desc.fragmentShaderPath = "Resources/Shaders/frag.spv"; 
 
-	const std::vector<Vertex> vertices = 
+	const std::vector<Vertex> vertices =
 	{
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-		
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 	};
 
 
@@ -37,7 +36,8 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 	};
 
 	Mesh mesh{ vertices, indices };
-	GraphicsPipeline pipeline(desc);
+	Texture texture{ "Resources/Textures/statue-1275469_1280.jpg" };
+	GraphicsPipeline pipeline(desc, texture);
 	pipeline.Bind();
 	
 	// Main loop
