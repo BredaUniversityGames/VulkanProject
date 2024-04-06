@@ -3,8 +3,6 @@
 #include "Core/Defines.h"
 #include <vector>
 
-
-
 static const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
 namespace VulkanProject
@@ -23,6 +21,12 @@ namespace VulkanProject
 #endif// _DEBUG
 	namespace Renderer
 	{
+		const uint GetCurrentFrame();
+		template <typename T> void UploadUniformBuffer(std::vector<void*> buffer, T adata, size_t sizeOfData) 
+		{
+			memcpy(buffer[GetCurrentFrame()], &adata, sizeOfData);
+		};
+
 		void SetClearColor(glm::vec4& color);
 		void BindPipeline(const VkPipeline& pipeline, const VkPipelineLayout layout);
 		const VkRenderPass GetRenderPass();
@@ -34,8 +38,7 @@ namespace VulkanProject
 
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-		//for now data is set
-		void UploadUniformBuffer(std::vector<void*> buffer, UniformBufferObject data, size_t sizeOfData);
+
 		void BindDescriptors(std::vector<VkDescriptorSet> descriptors);
 
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -43,7 +46,8 @@ namespace VulkanProject
 		VkCommandBuffer BeginSingleTimeCommands();
 		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-		VkImageView CreateImageView(VkImage, VkFormat format);
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
+		
 	}
 	class Graphics
 	{
@@ -57,7 +61,7 @@ namespace VulkanProject
 		void BeginFrame();
 		void EndFrame();
 	private:
-	
+		void CreateDepthResources();
 		void CreateSwapChain();
 		void ClearSwapChain();
 		void CreateImageViews();
@@ -96,6 +100,10 @@ namespace VulkanProject
 		
 		uint32_t m_ImageIndex;
 		VkResult m_Result;
+
+		VkImage m_DepthImage;
+		VkDeviceMemory m_DepthImageMemory;
+		VkImageView m_DepthImageView;
 	};
 }
 

@@ -5,7 +5,6 @@
 #include "Texture.h"
 
 
-
 static std::vector<char> readFile(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -29,6 +28,7 @@ static std::vector<char> readFile(const std::string& filename)
 
 VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& texture)
 {
+   
     // Create descriptor layout
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -38,6 +38,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
         samplerLayoutBinding.binding = 1;
         samplerLayoutBinding.descriptorCount = 1;
@@ -45,7 +46,14 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+      /*  VkDescriptorSetLayoutBinding PerObjectBufferBinding{};
+        PerObjectBufferBinding.binding = 2;
+        PerObjectBufferBinding.descriptorCount = 1;
+        PerObjectBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        PerObjectBufferBinding.pImmutableSamplers = nullptr;
+        PerObjectBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;*/
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding /*, PerObjectBufferBinding*/ };
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -115,6 +123,14 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
+
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
@@ -153,6 +169,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
+        pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pStages = shaderStages;
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -193,6 +210,19 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
             vkMapMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
         }
 
+       /* VkDeviceSize ModelbufferSize = sizeof(glm::mat4);
+
+        m_ModelBuffer.resize(MAX_FRAMES_IN_FLIGHT);
+        m_ModelBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        m_ModelBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            Renderer::CreateBuffer(ModelbufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_ModelBuffer[i], m_ModelBuffersMemory[i]);
+
+            vkMapMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], 0, bufferSize, 0, &m_ModelBuffersMapped[i]);
+        }*/
+
         // Create descriptor pool
         {
             std::array<VkDescriptorPoolSize, 2> poolSizes{};
@@ -200,6 +230,8 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
             poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
             poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+         /*   poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);*/
 
             VkDescriptorPoolCreateInfo poolInfo{};
             poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -224,7 +256,8 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
             allocInfo.pSetLayouts = layouts.data();
 
             m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-            if (vkAllocateDescriptorSets(Renderer::GetDevice(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) {
+            if (vkAllocateDescriptorSets(Renderer::GetDevice(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) 
+            {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
 
@@ -234,6 +267,11 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
                 bufferInfo.buffer = m_UniformBuffers[i];
                 bufferInfo.offset = 0;
                 bufferInfo.range = sizeof(UniformBufferObject);
+
+             /*   VkDescriptorBufferInfo bufferInfo1{};
+                bufferInfo1.buffer = m_ModelBuffer[i];
+                bufferInfo1.offset = 0;
+                bufferInfo1.range = sizeof(glm::mat4);*/
 
                 VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -258,6 +296,14 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
                 descriptorWrites[1].descriptorCount = 1;
                 descriptorWrites[1].pImageInfo = &imageInfo;
 
+               /* descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[2].dstSet = m_DescriptorSets[i];
+                descriptorWrites[2].dstBinding = 2;
+                descriptorWrites[2].dstArrayElement = 0;
+                descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[2].descriptorCount = 1;
+                descriptorWrites[2].pBufferInfo = &bufferInfo1;*/
+
                 vkUpdateDescriptorSets(Renderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
             }
         }
@@ -268,12 +314,13 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
 void VulkanProject::GraphicsPipeline::UpdateBuffers(UniformBufferObject& ubo)
 {
     Renderer::UploadUniformBuffer(m_UniformBuffersMapped, ubo, sizeof(ubo));
+    //Renderer::UploadUniformBuffer(m_ModelBuffersMapped, ubo.model, sizeof(glm::mat4));
     Renderer::BindDescriptors(m_DescriptorSets);
 }
 
 VulkanProject::GraphicsPipeline::~GraphicsPipeline()
 {
-
+    
     vkDestroyDescriptorPool(Renderer::GetDevice(), m_DescriptorPool, nullptr);
 
 
@@ -281,6 +328,9 @@ VulkanProject::GraphicsPipeline::~GraphicsPipeline()
     {
         vkDestroyBuffer(Renderer::GetDevice(), m_UniformBuffers[i], nullptr);
         vkFreeMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], nullptr);
+
+        //vkDestroyBuffer(Renderer::GetDevice(), m_ModelBuffer[i], nullptr);
+       // vkFreeMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], nullptr);
     }
 
 	vkDestroyPipeline(Renderer::GetDevice(), m_GraphicsPipeline, nullptr);
@@ -336,72 +386,4 @@ void VulkanProject::GraphicsPipeline::CreateTextureSamplers()
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
-
-VulkanProject::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint16_t> indices)
-{
-    // vertex buffer
-    {
-
-        //sizeOfVertices = vertices.size();
-
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(Renderer::GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(Renderer::GetDevice(), stagingBufferMemory);
-
-        Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
-
-        Renderer::CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
-
-        vkDestroyBuffer(Renderer::GetDevice(), stagingBuffer, nullptr);
-        vkFreeMemory(Renderer::GetDevice(), stagingBufferMemory, nullptr);
-    }
-
-    // index buffer
-    {
-        sizeOfIndices = indices.size();
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(Renderer::GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, indices.data(), (size_t)bufferSize);
-        vkUnmapMemory(Renderer::GetDevice(), stagingBufferMemory);
-
-        Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
-
-        Renderer::CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
-
-        vkDestroyBuffer(Renderer::GetDevice(), stagingBuffer, nullptr);
-        vkFreeMemory(Renderer::GetDevice(), stagingBufferMemory, nullptr); 
-    }
-}
-
-void VulkanProject::Mesh::Draw()
-{
-    
-
-    VkBuffer vertexBuffers[] = { m_VertexBuffer };
-    Renderer::UploadIndexedBuffer(vertexBuffers, m_IndexBuffer, sizeOfIndices);
-}
-
-VulkanProject::Mesh::~Mesh()
-{
-    vkDestroyBuffer(Renderer::GetDevice(), m_IndexBuffer, nullptr);
-    vkFreeMemory(Renderer::GetDevice(), m_IndexBufferMemory, nullptr);
-
-    vkDestroyBuffer(Renderer::GetDevice(), m_VertexBuffer, nullptr);
-    vkFreeMemory(Renderer::GetDevice(), m_VertexBufferMemory, nullptr);
-}
-
-
 

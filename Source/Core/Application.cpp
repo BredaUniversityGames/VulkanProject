@@ -23,19 +23,26 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 
 	const std::vector<Vertex> vertices =
 	{
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		{ {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		{ {0.5f, 0.5f, 0.0f},  {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f} },
+		{{-0.5f, 0.5f, 0.0f},  {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f} },
+
 	};
-
-
-	const std::vector<uint16_t> indices = 
+	const std::vector<Vertex> vertices1 =
 	{
-		0, 1, 2, 2, 3, 0
+		{{-0.5f, -0.5f, -0.5f},{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} ,{1.0f, 0.0f, 0.0f}},
+		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} ,{1.0f, 0.0f, 0.0f}},
+		{{0.5f, 0.5f, -0.5f},  {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} ,{1.0f, 0.0f, 0.0f}},
+		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f} ,{1.0f, 0.0f, 0.0f}}
 	};
-
+	const std::vector<uint32_t> indices = 
+	{
+		0, 1, 2, 2, 3, 0,
+	};
+	Model model("Resources/Models/glTF/DamagedHelmet.gltf");
 	Mesh mesh{ vertices, indices };
+	Mesh mesh1{ vertices1, indices };
 	Texture texture{ "Resources/Textures/statue-1275469_1280.jpg" };
 	GraphicsPipeline pipeline(desc, texture);
 	pipeline.Bind();
@@ -55,8 +62,10 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 		ubo.proj[1][1] *= -1;
 
 		m_Graphics->BeginFrame();
+
 		pipeline.UpdateBuffers(ubo);
-		mesh.Draw();
+		model.Draw(ubo.model);
+		//mesh1.Draw(ubo.model);
 		m_Graphics->EndFrame();
 		
 	}
