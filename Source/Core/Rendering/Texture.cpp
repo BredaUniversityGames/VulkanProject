@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include "Graphics.h"
+#include "Shader.h"
 namespace VulkanProject
 {
 void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -541,7 +542,7 @@ VulkanProject::Model::Model(std::string path)
 VulkanProject::Model::~Model()
 {
 }
-void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform)
+void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform, GraphicsPipeline& pipeline)
 {
 	const auto& node = m_Nodes[index];
 	auto transform = node.transform * parentTransform;
@@ -552,6 +553,7 @@ void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform)
 			//making sure that only present textures are bound
 			if (primitve.texture != nullptr)
 			{
+				pipeline.UpdateDesctiptorSets(*primitve.texture);
 				//primitve.texture->Bind(0);
 			}
 			/*if (primitve.normalTexture != nullptr)
@@ -568,15 +570,15 @@ void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform)
 	}
 	for (int i = 0; i < node.children.size(); i++)
 	{
-		DrawNode(node.children[i], transform);
+		DrawNode(node.children[i], transform, pipeline);
 	}
 
 }
-void VulkanProject::Model::Draw(glm::mat4 modelmatrix)
+void VulkanProject::Model::Draw(glm::mat4 modelmatrix, GraphicsPipeline& pipeline)
 {
 	for (int i = 0; i < m_RootNodes.size(); i++)
 	{
-		DrawNode(m_RootNodes[i], modelmatrix);
+		DrawNode(m_RootNodes[i], modelmatrix, pipeline);
 	}
 }
 

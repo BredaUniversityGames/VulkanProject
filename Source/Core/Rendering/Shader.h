@@ -26,11 +26,12 @@ namespace VulkanProject
     class GraphicsPipeline
     {
     public:
-        GraphicsPipeline(PipelineDesc& desc, Texture& texture);
+        GraphicsPipeline(PipelineDesc& desc);
         ~GraphicsPipeline();
         void Bind();
         void UpdateBuffers(UniformBufferObject& ubo);
-        
+        void BindData();
+        void UpdateDesctiptorSets(Texture& texture);
     
     private:
         VkShaderModule createShaderModule(const std::vector<char>& code);

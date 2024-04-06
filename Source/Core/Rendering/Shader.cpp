@@ -26,7 +26,7 @@ static std::vector<char> readFile(const std::string& filename)
 }
 
 
-VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& texture)
+VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 {
    
     // Create descriptor layout
@@ -37,7 +37,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
+      
 
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
         samplerLayoutBinding.binding = 1;
@@ -58,6 +58,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
+     
 
         if (vkCreateDescriptorSetLayout(Renderer::GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
         {
@@ -256,57 +257,12 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc, Texture& t
             allocInfo.pSetLayouts = layouts.data();
 
             m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-            if (vkAllocateDescriptorSets(Renderer::GetDevice(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) 
+            if (vkAllocateDescriptorSets(Renderer::GetDevice(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
-
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = m_UniformBuffers[i];
-                bufferInfo.offset = 0;
-                bufferInfo.range = sizeof(UniformBufferObject);
-
-             /*   VkDescriptorBufferInfo bufferInfo1{};
-                bufferInfo1.buffer = m_ModelBuffer[i];
-                bufferInfo1.offset = 0;
-                bufferInfo1.range = sizeof(glm::mat4);*/
-
-                VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = texture.GetImageview();
-                imageInfo.sampler = m_TextureSampler;
-
-                std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-                descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = m_DescriptorSets[i];
-                descriptorWrites[0].dstBinding = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet = m_DescriptorSets[i];
-                descriptorWrites[1].dstBinding = 1;
-                descriptorWrites[1].dstArrayElement = 0;
-                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &imageInfo;
-
-               /* descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[2].dstSet = m_DescriptorSets[i];
-                descriptorWrites[2].dstBinding = 2;
-                descriptorWrites[2].dstArrayElement = 0;
-                descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[2].descriptorCount = 1;
-                descriptorWrites[2].pBufferInfo = &bufferInfo1;*/
-
-                vkUpdateDescriptorSets(Renderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-            }
         }
+        
     }
 
 }
@@ -315,7 +271,64 @@ void VulkanProject::GraphicsPipeline::UpdateBuffers(UniformBufferObject& ubo)
 {
     Renderer::UploadUniformBuffer(m_UniformBuffersMapped, ubo, sizeof(ubo));
     //Renderer::UploadUniformBuffer(m_ModelBuffersMapped, ubo.model, sizeof(glm::mat4));
+    //Renderer::BindDescriptors(m_DescriptorSets);
+
+}
+
+void VulkanProject::GraphicsPipeline::BindData()
+{
     Renderer::BindDescriptors(m_DescriptorSets);
+}
+
+void VulkanProject::GraphicsPipeline::UpdateDesctiptorSets(Texture& texture)
+{
+    
+     
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = m_UniformBuffers[Renderer::GetCurrentFrame()];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        /*   VkDescriptorBufferInfo bufferInfo1{};
+            bufferInfo1.buffer = m_ModelBuffer[i];
+            bufferInfo1.offset = 0;
+            bufferInfo1.range = sizeof(glm::mat4);*/
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = texture.GetImageview();
+        imageInfo.sampler = m_TextureSampler;
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
+
+        /* descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[2].dstSet = m_DescriptorSets[i];
+            descriptorWrites[2].dstBinding = 2;
+            descriptorWrites[2].dstArrayElement = 0;
+            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[2].descriptorCount = 1;
+            descriptorWrites[2].pBufferInfo = &bufferInfo1;*/
+
+        vkUpdateDescriptorSets(Renderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    
+        Renderer::BindDescriptors(m_DescriptorSets);
+
 }
 
 VulkanProject::GraphicsPipeline::~GraphicsPipeline()

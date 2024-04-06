@@ -88,16 +88,16 @@ namespace VulkanProject
         //size_t sizeOfVertices;
         uint32_t sizeOfIndices;
     };
-
+    class GraphicsPipeline;
     class Model
     {
     public:
         Model(std::string path);
         ~Model();
-        void Draw(glm::mat4 modelmatrix);
+        void Draw(glm::mat4 modelmatrix, GraphicsPipeline& pipeline);
     private:
   
-        void DrawNode(int index,glm::mat4 parentTransform);
+        void DrawNode(int index,glm::mat4 parentTransform, GraphicsPipeline& pipeline);
         struct Primitive
         {
            Mesh* mesh;

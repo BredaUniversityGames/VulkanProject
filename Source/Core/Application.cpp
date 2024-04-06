@@ -44,9 +44,9 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 	Mesh mesh{ vertices, indices };
 	Mesh mesh1{ vertices1, indices };
 	Texture texture{ "Resources/Textures/statue-1275469_1280.jpg" };
-	GraphicsPipeline pipeline(desc, texture);
+	GraphicsPipeline pipeline(desc);
+	//pipeline.UpdateDesctiptorSets(texture);
 	pipeline.Bind();
-	
 	// Main loop
 	while (m_Window->Update())
 	{
@@ -56,7 +56,9 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f),  glm::radians(90.f), glm::vec3(1.0f, 1.0f, 0.0f));
+		ubo.model = glm::rotate(ubo.model, glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.model = glm::rotate(ubo.model, time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), m_Window->m_Width / (float)m_Window->m_Height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
@@ -64,7 +66,8 @@ VulkanProject::Application::Application(VulkanProject::AppConfig& info)
 		m_Graphics->BeginFrame();
 
 		pipeline.UpdateBuffers(ubo);
-		model.Draw(ubo.model);
+		model.Draw(ubo.model, pipeline);
+		pipeline.BindData();
 		//mesh1.Draw(ubo.model);
 		m_Graphics->EndFrame();
 		
