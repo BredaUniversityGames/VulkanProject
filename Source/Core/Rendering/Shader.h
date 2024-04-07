@@ -30,8 +30,9 @@ namespace VulkanProject
         ~GraphicsPipeline();
         void Bind();
         void UpdateBuffers(UniformBufferObject& ubo);
+        void UploadModelBuffer(glm::mat4 model);
         void BindData();
-        void UpdateDesctiptorSets(Texture& texture);
+        void UpdateDesctiptorSets(std::vector<Texture*> textures);
     
     private:
         VkShaderModule createShaderModule(const std::vector<char>& code);

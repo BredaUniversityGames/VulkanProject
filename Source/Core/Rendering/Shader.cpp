@@ -33,33 +33,44 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorCount = 1;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorCount = 1;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-      
 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding modelLayoutBinding{};
+        modelLayoutBinding.binding = 1;
+        modelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        modelLayoutBinding.descriptorCount = 1;
+        modelLayoutBinding.pImmutableSamplers = nullptr;
+        modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-      /*  VkDescriptorSetLayoutBinding PerObjectBufferBinding{};
-        PerObjectBufferBinding.binding = 2;
-        PerObjectBufferBinding.descriptorCount = 1;
-        PerObjectBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        PerObjectBufferBinding.pImmutableSamplers = nullptr;
-        PerObjectBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;*/
+        std::array<VkDescriptorSetLayoutBinding, 3> texturesLayoutBinding{};
+        texturesLayoutBinding[0].binding = 2;
+        texturesLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texturesLayoutBinding[0].descriptorCount = 1;
+        texturesLayoutBinding[0].pImmutableSamplers = nullptr;
+        texturesLayoutBinding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding /*, PerObjectBufferBinding*/ };
+        texturesLayoutBinding[1].binding = 3;
+        texturesLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texturesLayoutBinding[1].descriptorCount = 1;
+        texturesLayoutBinding[1].pImmutableSamplers = nullptr;
+        texturesLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        texturesLayoutBinding[2].binding = 4;
+        texturesLayoutBinding[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texturesLayoutBinding[2].descriptorCount = 1;
+        texturesLayoutBinding[2].pImmutableSamplers = nullptr;
+        texturesLayoutBinding[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+     
+
+        std::array<VkDescriptorSetLayoutBinding, 5> bindings = { uboLayoutBinding, modelLayoutBinding, texturesLayoutBinding[0],texturesLayoutBinding[1] ,texturesLayoutBinding[2] };
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
      
-
         if (vkCreateDescriptorSetLayout(Renderer::GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create descriptor set layout!");
@@ -198,7 +209,7 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 
    // Buffers
     {
-        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        VkDeviceSize ViewProjectionbufferSize = sizeof(UniformBufferObject);
 
         m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         m_UniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -206,12 +217,11 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            Renderer::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
+            Renderer::CreateBuffer(ViewProjectionbufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
 
-            vkMapMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
+            vkMapMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], 0, ViewProjectionbufferSize, 0, &m_UniformBuffersMapped[i]);
         }
-
-       /* VkDeviceSize ModelbufferSize = sizeof(glm::mat4);
+        VkDeviceSize modelBufferSize = sizeof(glm::mat4);
 
         m_ModelBuffer.resize(MAX_FRAMES_IN_FLIGHT);
         m_ModelBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
@@ -219,20 +229,21 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            Renderer::CreateBuffer(ModelbufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_ModelBuffer[i], m_ModelBuffersMemory[i]);
+            Renderer::CreateBuffer(modelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_ModelBuffer[i], m_ModelBuffersMemory[i]);
 
-            vkMapMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], 0, bufferSize, 0, &m_ModelBuffersMapped[i]);
-        }*/
-
+            vkMapMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], 0, modelBufferSize, 0, &m_ModelBuffersMapped[i]);
+        }
+       
         // Create descriptor pool
         {
-            std::array<VkDescriptorPoolSize, 2> poolSizes{};
+            std::array<VkDescriptorPoolSize, 3 > poolSizes{};
             poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-            poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-         /*   poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);*/
+            poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 3;
+
 
             VkDescriptorPoolCreateInfo poolInfo{};
             poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -262,7 +273,6 @@ VulkanProject::GraphicsPipeline::GraphicsPipeline(PipelineDesc& desc)
                 throw std::runtime_error("failed to allocate descriptor sets!");
             }
         }
-        
     }
 
 }
@@ -275,59 +285,91 @@ void VulkanProject::GraphicsPipeline::UpdateBuffers(UniformBufferObject& ubo)
 
 }
 
+void VulkanProject::GraphicsPipeline::UploadModelBuffer(glm::mat4 model)
+{
+    Renderer::UploadUniformBuffer(m_ModelBuffersMapped, model, sizeof(glm::mat4));
+}
+
 void VulkanProject::GraphicsPipeline::BindData()
 {
     Renderer::BindDescriptors(m_DescriptorSets);
 }
 
-void VulkanProject::GraphicsPipeline::UpdateDesctiptorSets(Texture& texture)
+void VulkanProject::GraphicsPipeline::UpdateDesctiptorSets(std::vector<Texture*> textures)
 {
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_UniformBuffers[Renderer::GetCurrentFrame()];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+
+    VkDescriptorBufferInfo bufferInfo1{};
+    bufferInfo1.buffer = m_ModelBuffer[Renderer::GetCurrentFrame()];
+    bufferInfo1.offset = 0;
+    bufferInfo1.range = sizeof(glm::mat4);
+
+    VkDescriptorImageInfo diffuseInfo;
+    diffuseInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    diffuseInfo.imageView = textures[0]->GetImageview();
+    diffuseInfo.sampler = m_TextureSampler;
+
+    VkDescriptorImageInfo normalInfo;
+    normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    normalInfo.imageView = textures[1]->GetImageview();
+    normalInfo.sampler = m_TextureSampler;
+
+    VkDescriptorImageInfo metalicInfo;
+    metalicInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    metalicInfo.imageView = textures[2]->GetImageview();
+    metalicInfo.sampler = m_TextureSampler;
+
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
+                      
+    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[0].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+    descriptorWrites[0].dstBinding = 0;
+    descriptorWrites[0].dstArrayElement = 0;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorCount = 1;
+    descriptorWrites[0].pBufferInfo = &bufferInfo;
+                    
+    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+    descriptorWrites[1].dstBinding = 1;
+    descriptorWrites[1].dstArrayElement = 0;
+    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[1].descriptorCount = 1;
+    descriptorWrites[1].pBufferInfo = &bufferInfo1;
+   
+    descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[2].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+    descriptorWrites[2].dstBinding = 2;
+    descriptorWrites[2].dstArrayElement = 0;
+    descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[2].descriptorCount = 1;
+    descriptorWrites[2].pImageInfo = &diffuseInfo;
+
+    descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[3].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+    descriptorWrites[3].dstBinding = 3;
+    descriptorWrites[3].dstArrayElement = 0;
+    descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[3].descriptorCount = 1;
+    descriptorWrites[3].pImageInfo = &normalInfo;
+                    
+    descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[4].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
+    descriptorWrites[4].dstBinding = 4;
+    descriptorWrites[4].dstArrayElement = 0;
+    descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[4].descriptorCount = 1;
+    descriptorWrites[4].pImageInfo = &metalicInfo;
+                 
+
+
+    vkUpdateDescriptorSets(Renderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     
-     
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_UniformBuffers[Renderer::GetCurrentFrame()];
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        /*   VkDescriptorBufferInfo bufferInfo1{};
-            bufferInfo1.buffer = m_ModelBuffer[i];
-            bufferInfo1.offset = 0;
-            bufferInfo1.range = sizeof(glm::mat4);*/
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = texture.GetImageview();
-        imageInfo.sampler = m_TextureSampler;
-
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = m_DescriptorSets[Renderer::GetCurrentFrame()];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
-
-        /* descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[2].dstSet = m_DescriptorSets[i];
-            descriptorWrites[2].dstBinding = 2;
-            descriptorWrites[2].dstArrayElement = 0;
-            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[2].descriptorCount = 1;
-            descriptorWrites[2].pBufferInfo = &bufferInfo1;*/
-
-        vkUpdateDescriptorSets(Renderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    
-        Renderer::BindDescriptors(m_DescriptorSets);
+    Renderer::BindDescriptors(m_DescriptorSets);
 
 }
 
@@ -342,8 +384,8 @@ VulkanProject::GraphicsPipeline::~GraphicsPipeline()
         vkDestroyBuffer(Renderer::GetDevice(), m_UniformBuffers[i], nullptr);
         vkFreeMemory(Renderer::GetDevice(), m_UniformBuffersMemory[i], nullptr);
 
-        //vkDestroyBuffer(Renderer::GetDevice(), m_ModelBuffer[i], nullptr);
-       // vkFreeMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], nullptr);
+        vkDestroyBuffer(Renderer::GetDevice(), m_ModelBuffer[i], nullptr);
+        vkFreeMemory(Renderer::GetDevice(), m_ModelBuffersMemory[i], nullptr);
     }
 
 	vkDestroyPipeline(Renderer::GetDevice(), m_GraphicsPipeline, nullptr);

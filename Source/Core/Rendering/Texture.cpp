@@ -198,7 +198,56 @@ VulkanProject::Mesh::~Mesh()
 	vkDestroyBuffer(Renderer::GetDevice(), m_VertexBuffer, nullptr);
 	vkFreeMemory(Renderer::GetDevice(), m_VertexBufferMemory, nullptr);
 }
+void CalculateTangent(std::vector<VulkanProject::Vertex>& vertices, std::vector<unsigned int>& indices)
+{
+	for (unsigned int i = 0; i < indices.size(); i += 3)
+	{
+		auto& vertex1 = vertices[indices[i + 0]];
+		auto& vertex2 = vertices[indices[i + 1]];
+		auto& vertex3 = vertices[indices[i + 2]];
 
+		glm::vec3 positionVertex1 = vertex1.pos;
+		glm::vec3 positionVertex2 = vertex2.pos;
+		glm::vec3 positionVertex3 = vertex3.pos;
+
+		glm::vec2 texCoordVertex1 = vertex1.texCoord;
+		glm::vec2 texCoordVertex2 = vertex2.texCoord;
+		glm::vec2 texCoordVertex3 = vertex3.texCoord;
+
+		glm::vec3 tangent;
+
+		// Edges of the triangle : position delta
+		glm::vec3 deltaPos1 = positionVertex2 - positionVertex1;
+		glm::vec3 deltaPos2 = positionVertex3 - positionVertex1;
+
+		// UV delta
+		glm::vec2 deltaUV1 = texCoordVertex2 - texCoordVertex1;
+		glm::vec2 deltaUV2 = texCoordVertex3 - texCoordVertex1;
+
+		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+		tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+
+		tangent = glm::normalize(tangent);
+
+		glm::vec3 tangentVertex1 = vertex1.tangent;
+		glm::vec3 tangentVertex2 = vertex2.tangent;
+		glm::vec3 tangentVertex3 = vertex3.tangent;
+
+		tangentVertex1 += tangent;
+		tangentVertex2 += tangent;
+		tangentVertex3 += tangent;
+
+		tangentVertex1 = glm::normalize(tangentVertex1);
+		tangentVertex2 = glm::normalize(tangentVertex2);
+		tangentVertex3 = glm::normalize(tangentVertex3);
+
+		//wrong
+		vertex1.tangent = glm::vec4(tangentVertex1, 0.f);
+		vertex2.tangent = glm::vec4(tangentVertex2, 0.f);
+		vertex3.tangent = glm::vec4(tangentVertex3, 0.f);
+	
+	}
+}
 void CalculateNormal(std::vector<VulkanProject::Vertex>& vertices, std::vector<unsigned int>& indices)
 {
 	for (unsigned int i = 0; i < indices.size(); i += 3)
@@ -292,15 +341,13 @@ bool GetData(std::vector<VulkanProject::Vertex>& vertices, const tinygltf::Primi
 			vertices[i].normal.z = *(float*)(&Buffer.data[index + sizeof(float) * 2]);
 		}
 		else if (type == "TANGENT")
-		{/*
-			vertices[i].tangents[0] = *(float*)(&Buffer.data[index + sizeof(float) * 0]);
-			vertices[i].tangents[1] = *(float*)(&Buffer.data[index + sizeof(float) * 1]);
-			vertices[i].tangents[2] = *(float*)(&Buffer.data[index + sizeof(float) * 2]);*/
+		{
+			vertices[i].tangent[0] = *(float*)(&Buffer.data[index + sizeof(float) * 0]);
+			vertices[i].tangent[1] = *(float*)(&Buffer.data[index + sizeof(float) * 1]);
+			vertices[i].tangent[2] = *(float*)(&Buffer.data[index + sizeof(float) * 2]);
+			vertices[i].tangent[3] = *(float*)(&Buffer.data[index + sizeof(float) * 3]);
 
 		}
-
-
-
 	}
 
 	return true;
@@ -438,10 +485,10 @@ VulkanProject::Model::Model(std::string path)
 					CalculateNormal(vertices, indices);
 				};
 
-				/*if (!GetData(vertices, primtive, model, "TANGENT", 3, vertexCount))
+				if (!GetData(vertices, primtive, model, "TANGENT", 3, vertexCount))
 				{
 					CalculateTangent(vertices, indices);
-				}*/
+				}
 
 
 
@@ -465,8 +512,15 @@ VulkanProject::Model::Model(std::string path)
 
 						std::string normalPath = GetTexturePathforPrimitive(primtive, model, path, eTextureTypes::Normal);
 
-						//primitives.push_back({ new Mesh(vertices, indices), new Texture(texturePath), Texture(normalPath), nullptr });
-						primitives.push_back({ new Mesh(vertices, indices), new Texture(texturePath)});
+						if (model.materials[primtive.material].pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
+						{
+							std::string metallicPath = GetTexturePathforPrimitive(primtive, model, path, eTextureTypes::Metalic_Roughness);
+
+							primitives.push_back({ new Mesh(vertices, indices), new Texture(texturePath), new Texture(normalPath), new Texture(metallicPath)});
+							continue;
+						}
+
+						primitives.push_back({ new Mesh(vertices, indices), new Texture(texturePath), new Texture(normalPath)});
 						continue;
 					}
 
@@ -550,10 +604,15 @@ void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform, Graphi
 	{
 		for (const auto& primitve : m_Meshes[node.mesh])
 		{
+			std::vector<Texture*> textures;
 			//making sure that only present textures are bound
 			if (primitve.texture != nullptr)
 			{
-				pipeline.UpdateDesctiptorSets(*primitve.texture);
+				textures.push_back(primitve.texture);
+				textures.push_back(primitve.normalTexture);
+				textures.push_back(primitve.metalic_roughnessTexture);
+			
+				pipeline.UpdateDesctiptorSets(textures);
 				//primitve.texture->Bind(0);
 			}
 			/*if (primitve.normalTexture != nullptr)
@@ -576,6 +635,8 @@ void VulkanProject::Model::DrawNode(int index, glm::mat4 parentTransform, Graphi
 }
 void VulkanProject::Model::Draw(glm::mat4 modelmatrix, GraphicsPipeline& pipeline)
 {
+	pipeline.UploadModelBuffer(modelmatrix);
+
 	for (int i = 0; i < m_RootNodes.size(); i++)
 	{
 		DrawNode(m_RootNodes[i], modelmatrix, pipeline);
